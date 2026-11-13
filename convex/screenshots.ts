@@ -7,6 +7,7 @@ import {
 } from "./lib";
 
 const MAX_BYTES = 10 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export const generateUploadUrl = mutation({
   args: { projectId: v.id("projects"), ownerKey: v.string() },
@@ -26,7 +27,7 @@ export const add = mutation({
     await requireOwnedProject(ctx, args.projectId, args.ownerKey);
 
     const meta = await ctx.db.system.get("_storage", args.storageId);
-    const isImage = meta?.contentType?.startsWith("image/") ?? false;
+    const isImage = ALLOWED_TYPES.includes(meta?.contentType ?? "");
     if (!meta || !isImage || meta.size > MAX_BYTES) {
       await ctx.storage.delete(args.storageId);
       throw new ConvexError("Upload a PNG, JPG or WebP image under 10 MB");
