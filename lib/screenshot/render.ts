@@ -162,8 +162,15 @@ const classic: Layout = (ctx, input) => {
   });
 
   const top = Math.max(textBottom + H * 0.04, H * 0.27);
-  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: W * 0.74, image: input.image });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: fitDeviceWidth(input, top), image: input.image });
 };
+
+/** Device width that fills the space below `top`, bleeding slightly off the bottom edge. */
+function fitDeviceWidth(input: RenderInput, top: number, min = 0.62, max = 0.82) {
+  const { width: W, height: H, platform } = input;
+  const ideal = (H * 1.05 - top) / (deviceHeight(platform, W) / W);
+  return Math.min(Math.max(ideal, W * min), W * max);
+}
 
 const bold: Layout = (ctx, input) => {
   const { width: W, height: H, colors } = input;
@@ -226,7 +233,7 @@ const minimal: Layout = (ctx, input) => {
   });
 
   const top = Math.max(textBottom + H * 0.04, H * 0.27);
-  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: W * 0.72, image: input.image });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: fitDeviceWidth(input, top, 0.6, 0.8), image: input.image });
 };
 
 const spotlight: Layout = (ctx, input) => {
@@ -234,7 +241,6 @@ const spotlight: Layout = (ctx, input) => {
   ctx.fillStyle = "#07070c";
   ctx.fillRect(0, 0, W, H);
 
-  const deviceW = W * 0.7;
   const glowY = H * 0.62;
   const glow = ctx.createRadialGradient(W / 2, glowY, 0, W / 2, glowY, W * 0.85);
   glow.addColorStop(0, rgba(colors.primary, 0.75));
@@ -260,7 +266,7 @@ const spotlight: Layout = (ctx, input) => {
   });
 
   const top = Math.max(textBottom + H * 0.045, H * 0.28);
-  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: deviceW, image: input.image });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: fitDeviceWidth(input, top, 0.6, 0.78), image: input.image });
 };
 
 const split: Layout = (ctx, input) => {
