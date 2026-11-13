@@ -21,3 +21,14 @@ Convex agent skills for common tasks can be installed by running
 `npx convex ai-files install`.
 
 <!-- convex-ai-end -->
+
+<!-- BEGIN:git-commit-rules -->
+
+## Git commit rules
+
+- Commit every change as **one single commit** per logical change (feature, fix, refactor, config). Do not split one change across many commits, and do not bundle unrelated changes together.
+- Write clear, conventional commit messages, e.g. `feat: add template renderer`, `fix: correct iOS export size`, `chore: add ai sdk deps`.
+- **Never add Claude (or any AI assistant) as a co-author.** Do not append `Co-Authored-By:` trailers or "Generated with Claude" lines to commit messages or PR bodies.
+- Commit only after the change type-checks (`bunx tsc --noEmit`) and lints (`bun run lint`).
+
+<!-- END:git-commit-rules -->
