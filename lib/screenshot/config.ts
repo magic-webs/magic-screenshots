@@ -58,6 +58,16 @@ export const EXPORT_TARGETS: ExportTarget[] = [
     folder: "app-store/iphone-6.9",
   },
   {
+    // App Store Connect "iPhone with Dynamic Island (medium display)" slot.
+    id: "ios-6.3",
+    platform: "ios",
+    store: "App Store",
+    label: 'iPhone 6.3"',
+    width: 1206,
+    height: 2622,
+    folder: "app-store/iphone-6.3",
+  },
+  {
     id: "ios-6.5",
     platform: "ios",
     store: "App Store",
@@ -78,8 +88,8 @@ export const EXPORT_TARGETS: ExportTarget[] = [
 ];
 
 export const PREVIEW_TARGET: Record<Platform, ExportTarget> = {
-  ios: EXPORT_TARGETS[0],
-  android: EXPORT_TARGETS[2],
+  ios: EXPORT_TARGETS.find((t) => t.id === "ios-6.9")!,
+  android: EXPORT_TARGETS.find((t) => t.id === "android-phone")!,
 };
 
 export type DesignColors = {

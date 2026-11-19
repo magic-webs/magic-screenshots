@@ -161,15 +161,32 @@ const classic: Layout = (ctx, input) => {
     subColor: rgba(colorToHex(colors.text), 0.85),
   });
 
-  const top = Math.max(textBottom + H * 0.04, H * 0.27);
-  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: fitDeviceWidth(input, top), image: input.image });
+  const regionTop = Math.max(textBottom + H * 0.04, H * 0.27);
+  const place = placeDevice(input, { regionTop, regionBottom: H * 0.97, maxWidth: W * 0.82 });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, ...place, image: input.image });
 };
 
-/** Device width that fills the space below `top`, bleeding slightly off the bottom edge. */
-function fitDeviceWidth(input: RenderInput, top: number, min = 0.62, max = 0.82) {
-  const { width: W, height: H, platform } = input;
-  const ideal = (H * 1.05 - top) / (deviceHeight(platform, W) / W);
-  return Math.min(Math.max(ideal, W * min), W * max);
+/** Vertical extent of a device of width `w`, including any rotation. */
+function deviceExtent(input: RenderInput, w: number, rotation = 0) {
+  const rad = (Math.abs(rotation) * Math.PI) / 180;
+  const h = deviceHeight(input.platform, w);
+  return h * Math.cos(rad) + w * Math.sin(rad);
+}
+
+/**
+ * Sizes and positions a device so its whole frame fits between `regionTop`
+ * and `regionBottom`. Returns the `top`/`width` to pass to `drawDevice`.
+ */
+function placeDevice(
+  input: RenderInput,
+  opts: { regionTop: number; regionBottom: number; maxWidth: number; rotation?: number; anchor?: "top" | "bottom" },
+) {
+  const { regionTop, regionBottom, maxWidth, rotation = 0, anchor = "top" } = opts;
+  const perWidth = deviceExtent(input, 1, rotation);
+  const width = Math.min(maxWidth, Math.max(0, regionBottom - regionTop) / perWidth);
+  const extent = width * perWidth;
+  const center = anchor === "top" ? regionTop + extent / 2 : regionBottom - extent / 2;
+  return { width, top: center - deviceHeight(input.platform, width) / 2 };
 }
 
 const bold: Layout = (ctx, input) => {
@@ -199,12 +216,12 @@ const bold: Layout = (ctx, input) => {
     headlineLines: 3,
   });
 
-  const top = Math.max(textBottom + H * 0.05, H * 0.3);
+  const regionTop = Math.max(textBottom + H * 0.05, H * 0.3);
+  const place = placeDevice(input, { regionTop, regionBottom: H * 0.97, maxWidth: W * 0.7, rotation: 7 });
   drawDevice(ctx, {
     platform: input.platform,
     cx: W * 0.56,
-    top,
-    width: W * 0.7,
+    ...place,
     image: input.image,
     rotation: 7,
   });
@@ -232,8 +249,9 @@ const minimal: Layout = (ctx, input) => {
     subColor: "#475569",
   });
 
-  const top = Math.max(textBottom + H * 0.04, H * 0.27);
-  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: fitDeviceWidth(input, top, 0.6, 0.8), image: input.image });
+  const regionTop = Math.max(textBottom + H * 0.04, H * 0.27);
+  const place = placeDevice(input, { regionTop, regionBottom: H * 0.97, maxWidth: W * 0.8 });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, ...place, image: input.image });
 };
 
 const spotlight: Layout = (ctx, input) => {
@@ -265,8 +283,9 @@ const spotlight: Layout = (ctx, input) => {
     subColor: mix(colors.secondary, "#ffffff", 0.35),
   });
 
-  const top = Math.max(textBottom + H * 0.045, H * 0.28);
-  drawDevice(ctx, { platform: input.platform, cx: W / 2, top, width: fitDeviceWidth(input, top, 0.6, 0.78), image: input.image });
+  const regionTop = Math.max(textBottom + H * 0.045, H * 0.28);
+  const place = placeDevice(input, { regionTop, regionBottom: H * 0.97, maxWidth: W * 0.78 });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, ...place, image: input.image });
 };
 
 const split: Layout = (ctx, input) => {
@@ -287,16 +306,8 @@ const split: Layout = (ctx, input) => {
   ctx.closePath();
   ctx.fill();
 
-  const deviceW = W * 0.74;
-  const devH = deviceHeight(input.platform, deviceW);
-  const deviceBottom = H * 0.66;
-  drawDevice(ctx, {
-    platform: input.platform,
-    cx: W / 2,
-    top: deviceBottom - devH,
-    width: deviceW,
-    image: input.image,
-  });
+  const place = placeDevice(input, { regionTop: H * 0.03, regionBottom: H * 0.68, maxWidth: W * 0.74, anchor: "bottom" });
+  drawDevice(ctx, { platform: input.platform, cx: W / 2, ...place, image: input.image });
 
   headlineBlock(ctx, input, {
     top: H * 0.74,
