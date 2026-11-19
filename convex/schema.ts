@@ -10,16 +10,25 @@ export const templateId = v.union(
 );
 
 export default defineSchema({
+  // App users. Credentials, usernames and sessions live in the Convex Auth
+  // components; this table only holds the app-side user record.
+  users: defineTable({}),
+
   projects: defineTable({
-    // Anonymous owner key stored in the browser. Swap for an auth identity later.
-    ownerKey: v.string(),
+    // Signed-in owner. Optional only for projects made before sign-in existed,
+    // which are claimed by their browser's legacy ownerKey (see projects.claimAnonymous).
+    userId: v.optional(v.id("users")),
+    // Legacy anonymous per-browser key. Cleared once the project is claimed.
+    ownerKey: v.optional(v.string()),
     name: v.string(),
     description: v.string(),
     templateId,
     primaryColor: v.string(),
     secondaryColor: v.string(),
     textColor: v.string(),
-  }).index("by_ownerKey", ["ownerKey"]),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_ownerKey", ["ownerKey"]),
 
   screenshots: defineTable({
     projectId: v.id("projects"),

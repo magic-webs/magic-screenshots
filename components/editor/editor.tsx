@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
-import { useOwnerKey } from "@/hooks/use-owner-key";
+import { useAuthToken } from "@convex-dev/auth/react";
 import { SiteHeader } from "@/components/site-header";
 import { DesignPanel } from "@/components/editor/design-panel";
 import { ScreenshotCard } from "@/components/editor/screenshot-card";
@@ -77,12 +77,9 @@ export function EditorSkeleton() {
 }
 
 export function Editor({ projectId }: { projectId: string }) {
-  const ownerKey = useOwnerKey();
+  const authToken = useAuthToken();
   const router = useRouter();
-  const project = useQuery(
-    api.projects.get,
-    ownerKey ? { projectId, ownerKey } : "skip",
-  );
+  const project = useQuery(api.projects.get, { projectId });
 
   const updateProject = useMutation(api.projects.update);
   const removeProject = useMutation(api.projects.remove);
@@ -111,7 +108,7 @@ export function Editor({ projectId }: { projectId: string }) {
     [colorDraft, project?.primaryColor, project?.secondaryColor, project?.textColor],
   );
 
-  if (project === undefined || ownerKey === null) return <EditorSkeleton />;
+  if (project === undefined) return <EditorSkeleton />;
 
   if (project === null) {
     return (
@@ -122,7 +119,7 @@ export function Editor({ projectId }: { projectId: string }) {
             <EmptyHeader>
               <EmptyTitle>Project not found</EmptyTitle>
               <EmptyDescription>
-                It may have been deleted, or it was created in another browser.
+                It may have been deleted, or it belongs to another account.
               </EmptyDescription>
             </EmptyHeader>
             <Link href="/" className={buttonVariants()}>
@@ -146,11 +143,10 @@ export function Editor({ projectId }: { projectId: string }) {
   const busy = generating || exportProgress !== null;
 
   async function onFiles(files: File[]) {
-    if (!ownerKey) return;
     setUploading((n) => n + files.length);
     for (const file of files) {
       try {
-        const uploadUrl = await generateUploadUrl({ projectId: pid, ownerKey });
+        const uploadUrl = await generateUploadUrl({ projectId: pid });
         const res = await fetch(uploadUrl, {
           method: "POST",
           headers: { "Content-Type": file.type },
@@ -158,7 +154,7 @@ export function Editor({ projectId }: { projectId: string }) {
         });
         if (!res.ok) throw new Error("Upload failed");
         const { storageId } = (await res.json()) as { storageId: Id<"_storage"> };
-        await addScreenshot({ projectId: pid, ownerKey, storageId });
+        await addScreenshot({ projectId: pid, storageId });
       } catch (err) {
         toast.add({
           type: "error",
@@ -172,12 +168,11 @@ export function Editor({ projectId }: { projectId: string }) {
   }
 
   function onCopyChange(id: Id<"screenshots">, copy: Copy) {
-    if (!ownerKey) return;
     setDrafts((d) => ({ ...d, [id]: copy }));
     clearTimeout(copyTimers.current[id]);
     copyTimers.current[id] = setTimeout(async () => {
       try {
-        await updateCopy({ screenshotId: id, ownerKey, ...copy });
+        await updateCopy({ screenshotId: id, ...copy });
         setDrafts((d) => {
           const current = d[id];
           if (!current || current.headline !== copy.headline || current.subheadline !== copy.subheadline) {
@@ -194,7 +189,6 @@ export function Editor({ projectId }: { projectId: string }) {
   }
 
   function onColors(next: Partial<DesignColors>) {
-    if (!ownerKey) return;
     const merged = { ...colorDraft, ...next };
     setColorDraft(merged);
     if (colorTimer.current) clearTimeout(colorTimer.current);
@@ -202,7 +196,6 @@ export function Editor({ projectId }: { projectId: string }) {
       try {
         await updateProject({
           projectId: pid,
-          ownerKey,
           primaryColor: merged.primary,
           secondaryColor: merged.secondary,
           textColor: merged.text,
@@ -215,32 +208,33 @@ export function Editor({ projectId }: { projectId: string }) {
   }
 
   async function onTemplate(id: TemplateId) {
-    if (!ownerKey) return;
     try {
-      await updateProject({ projectId: pid, ownerKey, templateId: id });
+      await updateProject({ projectId: pid, templateId: id });
     } catch (err) {
       toast.add({ type: "error", title: "Could not change template", description: errorMessage(err, "") });
     }
   }
 
   async function onDetails(details: { name?: string; description?: string }) {
-    if (!ownerKey) return;
     try {
-      await updateProject({ projectId: pid, ownerKey, ...details });
+      await updateProject({ projectId: pid, ...details });
     } catch (err) {
       toast.add({ type: "error", title: "Could not save details", description: errorMessage(err, "") });
     }
   }
 
   async function onGenerate() {
-    if (!ownerKey || !project) return;
+    if (!project) return;
     const withUrls = shots.filter((s): s is typeof s & { url: string } => s.url !== null);
     if (!withUrls.length) return;
     setGenerating(true);
     try {
       const res = await fetch("/api/generate-copy", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
         body: JSON.stringify({
           appName: project.name,
           description: project.description,
@@ -258,7 +252,7 @@ export function Editor({ projectId }: { projectId: string }) {
         headline: i.headline,
         subheadline: i.subheadline,
       }));
-      await setCopyBulk({ projectId: pid, ownerKey, items });
+      await setCopyBulk({ projectId: pid, items });
       setDrafts({});
       toast.add({ type: "success", title: "Captions generated", description: "Edit any caption to fine-tune it." });
     } catch (err) {
@@ -301,9 +295,8 @@ export function Editor({ projectId }: { projectId: string }) {
   }
 
   async function onDeleteProject() {
-    if (!ownerKey) return;
     try {
-      await removeProject({ projectId: pid, ownerKey });
+      await removeProject({ projectId: pid });
       router.push("/");
     } catch (err) {
       toast.add({ type: "error", title: "Could not delete project", description: errorMessage(err, "") });
@@ -411,12 +404,12 @@ export function Editor({ projectId }: { projectId: string }) {
                   subheadline={s.subheadline}
                   onChange={(copy) => onCopyChange(s._id, copy)}
                   onMove={(direction) =>
-                    void moveScreenshot({ screenshotId: s._id, ownerKey, direction }).catch((err) =>
+                    void moveScreenshot({ screenshotId: s._id, direction }).catch((err) =>
                       toast.add({ type: "error", title: "Could not reorder", description: errorMessage(err, "") }),
                     )
                   }
                   onDelete={() =>
-                    void removeScreenshot({ screenshotId: s._id, ownerKey }).catch((err) =>
+                    void removeScreenshot({ screenshotId: s._id }).catch((err) =>
                       toast.add({ type: "error", title: "Could not delete", description: errorMessage(err, "") }),
                     )
                   }

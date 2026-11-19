@@ -10,9 +10,9 @@ const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
 export const generateUploadUrl = mutation({
-  args: { projectId: v.id("projects"), ownerKey: v.string() },
+  args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
-    await requireOwnedProject(ctx, args.projectId, args.ownerKey);
+    await requireOwnedProject(ctx, args.projectId);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -20,11 +20,10 @@ export const generateUploadUrl = mutation({
 export const add = mutation({
   args: {
     projectId: v.id("projects"),
-    ownerKey: v.string(),
     storageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
-    await requireOwnedProject(ctx, args.projectId, args.ownerKey);
+    await requireOwnedProject(ctx, args.projectId);
 
     const meta = await ctx.db.system.get("_storage", args.storageId);
     const isImage = ALLOWED_TYPES.includes(meta?.contentType ?? "");
@@ -57,12 +56,11 @@ export const add = mutation({
 export const updateCopy = mutation({
   args: {
     screenshotId: v.id("screenshots"),
-    ownerKey: v.string(),
     headline: v.string(),
     subheadline: v.string(),
   },
   handler: async (ctx, args) => {
-    await requireOwnedScreenshot(ctx, args.screenshotId, args.ownerKey);
+    await requireOwnedScreenshot(ctx, args.screenshotId);
     await ctx.db.patch("screenshots", args.screenshotId, {
       headline: args.headline.slice(0, 80),
       subheadline: args.subheadline.slice(0, 140),
@@ -74,7 +72,6 @@ export const updateCopy = mutation({
 export const setCopyBulk = mutation({
   args: {
     projectId: v.id("projects"),
-    ownerKey: v.string(),
     items: v.array(
       v.object({
         screenshotId: v.id("screenshots"),
@@ -84,7 +81,7 @@ export const setCopyBulk = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    await requireOwnedProject(ctx, args.projectId, args.ownerKey);
+    await requireOwnedProject(ctx, args.projectId);
     for (const item of args.items.slice(0, MAX_SCREENSHOTS)) {
       const shot = await ctx.db.get("screenshots", item.screenshotId);
       if (!shot || shot.projectId !== args.projectId) continue;
@@ -100,11 +97,10 @@ export const setCopyBulk = mutation({
 export const move = mutation({
   args: {
     screenshotId: v.id("screenshots"),
-    ownerKey: v.string(),
     direction: v.union(v.literal("up"), v.literal("down")),
   },
   handler: async (ctx, args) => {
-    const shot = await requireOwnedScreenshot(ctx, args.screenshotId, args.ownerKey);
+    const shot = await requireOwnedScreenshot(ctx, args.screenshotId);
     const neighbor =
       args.direction === "up"
         ? await ctx.db
@@ -128,9 +124,9 @@ export const move = mutation({
 });
 
 export const remove = mutation({
-  args: { screenshotId: v.id("screenshots"), ownerKey: v.string() },
+  args: { screenshotId: v.id("screenshots") },
   handler: async (ctx, args) => {
-    const shot = await requireOwnedScreenshot(ctx, args.screenshotId, args.ownerKey);
+    const shot = await requireOwnedScreenshot(ctx, args.screenshotId);
     await ctx.storage.delete(shot.storageId);
     await ctx.db.delete("screenshots", shot._id);
     return null;

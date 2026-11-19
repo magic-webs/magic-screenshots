@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SmartphoneIcon } from "lucide-react";
 import type { ReactNode } from "react";
+import { UserMenu } from "@/components/auth/user-menu";
 
 export function SiteHeader({ children }: { children?: ReactNode }) {
   return (
@@ -12,7 +13,10 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
           </span>
           <span className="hidden sm:inline">Magicwebs Screenshots</span>
         </Link>
-        <div className="ml-auto flex items-center gap-2">{children}</div>
+        <div className="ml-auto flex items-center gap-2">
+          {children}
+          <UserMenu />
+        </div>
       </div>
     </header>
   );

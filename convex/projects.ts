@@ -1,18 +1,19 @@
 import { ConvexError, v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query } from "./_generated/server";
-import { MAX_SCREENSHOTS, requireOwnedProject } from "./lib";
+import { MAX_SCREENSHOTS, requireOwnedProject, requireUserId } from "./lib";
 import { templateId } from "./schema";
 
 const hexColor = /^#[0-9a-fA-F]{6}$/;
 
 export const create = mutation({
-  args: { ownerKey: v.string(), name: v.string(), description: v.string() },
+  args: { name: v.string(), description: v.string() },
   handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
     const name = args.name.trim();
     if (!name) throw new ConvexError("App name is required");
-    if (args.ownerKey.length < 16) throw new ConvexError("Invalid owner key");
     return await ctx.db.insert("projects", {
-      ownerKey: args.ownerKey,
+      userId,
       name: name.slice(0, 80),
       description: args.description.trim().slice(0, 500),
       templateId: "classic",
@@ -24,11 +25,13 @@ export const create = mutation({
 });
 
 export const listMine = query({
-  args: { ownerKey: v.string() },
-  handler: async (ctx, args) => {
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return [];
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_ownerKey", (q) => q.eq("ownerKey", args.ownerKey))
+      .withIndex("by_userId", (q) => q.eq("userId", userId))
       .order("desc")
       .take(50);
     return await Promise.all(
@@ -51,12 +54,14 @@ export const listMine = query({
 });
 
 export const get = query({
-  args: { projectId: v.string(), ownerKey: v.string() },
+  args: { projectId: v.string() },
   handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) return null;
     const projectId = ctx.db.normalizeId("projects", args.projectId);
     if (!projectId) return null;
     const project = await ctx.db.get("projects", projectId);
-    if (!project || project.ownerKey !== args.ownerKey) return null;
+    if (!project || project.userId !== userId) return null;
     const shots = await ctx.db
       .query("screenshots")
       .withIndex("by_projectId_and_order", (q) => q.eq("projectId", projectId))
@@ -86,7 +91,6 @@ export const get = query({
 export const update = mutation({
   args: {
     projectId: v.id("projects"),
-    ownerKey: v.string(),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
     templateId: v.optional(templateId),
@@ -94,8 +98,8 @@ export const update = mutation({
     secondaryColor: v.optional(v.string()),
     textColor: v.optional(v.string()),
   },
-  handler: async (ctx, { projectId, ownerKey, ...fields }) => {
-    await requireOwnedProject(ctx, projectId, ownerKey);
+  handler: async (ctx, { projectId, ...fields }) => {
+    await requireOwnedProject(ctx, projectId);
     const patch: typeof fields = {};
     if (fields.name !== undefined) {
       const name = fields.name.trim();
@@ -118,9 +122,9 @@ export const update = mutation({
 });
 
 export const remove = mutation({
-  args: { projectId: v.id("projects"), ownerKey: v.string() },
+  args: { projectId: v.id("projects") },
   handler: async (ctx, args) => {
-    await requireOwnedProject(ctx, args.projectId, args.ownerKey);
+    await requireOwnedProject(ctx, args.projectId);
     const shots = await ctx.db
       .query("screenshots")
       .withIndex("by_projectId_and_order", (q) => q.eq("projectId", args.projectId))
@@ -131,5 +135,30 @@ export const remove = mutation({
     }
     await ctx.db.delete("projects", args.projectId);
     return null;
+  },
+});
+
+/**
+ * Move projects created anonymously in this browser (before sign-in existed)
+ * to the signed-in user. Possessing the 64-char random ownerKey is the proof
+ * of ownership; claimed projects drop the key so it can't be reused.
+ */
+export const claimAnonymous = mutation({
+  args: { ownerKey: v.string() },
+  returns: v.number(),
+  handler: async (ctx, args) => {
+    const userId = await requireUserId(ctx);
+    if (args.ownerKey.length < 16) return 0;
+    const projects = await ctx.db
+      .query("projects")
+      .withIndex("by_ownerKey", (q) => q.eq("ownerKey", args.ownerKey))
+      .take(100);
+    let claimed = 0;
+    for (const p of projects) {
+      if (p.userId !== undefined) continue;
+      await ctx.db.patch("projects", p._id, { userId, ownerKey: undefined });
+      claimed++;
+    }
+    return claimed;
   },
 });

@@ -1,4 +1,6 @@
 import { generateText, Output } from "ai";
+import { ConvexHttpClient } from "convex/browser";
+import { api } from "@/convex/_generated/api";
 import { z } from "zod";
 
 const MODEL = "anthropic/claude-haiku-5.5";
@@ -40,7 +42,26 @@ function isAllowedImageUrl(raw: string) {
   }
 }
 
+/** True when the request carries a Convex Auth token for a live session. */
+async function isSignedIn(req: Request) {
+  const header = req.headers.get("authorization") ?? "";
+  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!token || !convexUrl) return false;
+  try {
+    const client = new ConvexHttpClient(convexUrl);
+    client.setAuth(token);
+    return await client.query(api.auth.isAuthenticated, {});
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: Request) {
+  if (!(await isSignedIn(req))) {
+    return Response.json({ error: "Sign in to generate captions" }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
