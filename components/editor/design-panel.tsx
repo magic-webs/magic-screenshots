@@ -16,6 +16,7 @@ import {
 
 export const COLOR_PRESETS: DesignColors[] = [
   { primary: "#5b0f1f", secondary: "#d9467a", text: "#ffffff" }, // RichyReach maroon + pink
+  { primary: "#0f766e", secondary: "#2dd4bf", text: "#ffffff" },
   { primary: "#4f46e5", secondary: "#06b6d4", text: "#ffffff" },
   { primary: "#f43f5e", secondary: "#f59e0b", text: "#ffffff" },
   { primary: "#059669", secondary: "#84cc16", text: "#ffffff" },

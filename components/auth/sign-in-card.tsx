@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 const MESSAGES: Record<string, string> = {
   USERNAME_TOO_SHORT: "Enter a username.",
@@ -42,13 +43,7 @@ function messageFor(code: string) {
   return MESSAGES[code] ?? "Sign-in failed. Please try again.";
 }
 
-export function SignInCard({
-  title = "Sign in to continue",
-  description = "Use a passkey, so there's no password to remember. A new username creates an account.",
-}: {
-  title?: string;
-  description?: string;
-}) {
+function usePasskeySignIn() {
   const { signIn, pending, autofill } = useSignInWithUsernamePasskey(api.auth);
   const [username, setUsername] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,6 +57,18 @@ export function SignInCard({
 
   const shownError =
     error ?? (autofill.lastError ? messageFor(autofill.lastError.error) : null);
+
+  return { username, setUsername, pending, shownError, onSubmit };
+}
+
+export function SignInCard({
+  title = "Sign in to continue",
+  description = "Use a passkey, so there's no password to remember. A new username creates an account.",
+}: {
+  title?: string;
+  description?: string;
+}) {
+  const { username, setUsername, pending, shownError, onSubmit } = usePasskeySignIn();
 
   return (
     <Card>
@@ -108,5 +115,77 @@ export function SignInCard({
         </CardFooter>
       </form>
     </Card>
+  );
+}
+
+/** One-row sign-in for the landing hero: username and passkey button side by side. */
+export function SignInInline({ className }: { className?: string }) {
+  const { username, setUsername, pending, shownError, onSubmit } = usePasskeySignIn();
+
+  return (
+    <form onSubmit={onSubmit} className={className}>
+      <Field data-invalid={shownError ? true : undefined} className="gap-2">
+        <FieldLabel htmlFor="hero-username" className="sr-only">
+          Username
+        </FieldLabel>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Input
+            id="hero-username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username webauthn"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
+            enterKeyHint="go"
+            placeholder="Pick a username"
+            maxLength={100}
+            required
+            disabled={pending}
+            aria-invalid={shownError ? true : undefined}
+            className="h-11 rounded-xl px-3.5 sm:flex-1"
+          />
+          <Button
+            type="submit"
+            disabled={pending || !username.trim()}
+            className="h-11 rounded-xl px-4 text-sm"
+          >
+            {/* Both labels share one grid cell, so the button keeps the wider
+                label's width and the input never jumps; they crossfade. */}
+            <span className="grid">
+              <span
+                aria-hidden={pending}
+                className={cn(
+                  "col-start-1 row-start-1 flex items-center justify-center gap-1.5 transition-[opacity,filter] duration-200 ease-ui",
+                  pending && "opacity-0 blur-[2px]",
+                )}
+              >
+                <KeyRoundIcon />
+                Continue with a passkey
+              </span>
+              <span
+                aria-hidden={!pending}
+                className={cn(
+                  "col-start-1 row-start-1 flex items-center justify-center gap-1.5 transition-[opacity,filter] duration-200 ease-ui",
+                  !pending && "opacity-0 blur-[2px]",
+                )}
+              >
+                <Spinner />
+                Waiting for your passkey…
+              </span>
+            </span>
+          </Button>
+        </div>
+        {shownError ? (
+          <FieldError key={shownError} className="message-in text-center">
+            {shownError}
+          </FieldError>
+        ) : (
+          <FieldDescription key="hint" className="message-in text-center">
+            No password. A new username creates your account.
+          </FieldDescription>
+        )}
+      </Field>
+    </form>
   );
 }

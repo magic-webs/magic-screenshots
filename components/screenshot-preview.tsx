@@ -16,6 +16,8 @@ type Props = {
   /** Rendered pixel width of the backing canvas. */
   pixelWidth?: number;
   className?: string;
+  /** Called after each completed draw. */
+  onRendered?: () => void;
 };
 
 export function ScreenshotPreview({
@@ -27,8 +29,14 @@ export function ScreenshotPreview({
   imageUrl,
   pixelWidth = 480,
   className,
+  onRendered,
 }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Kept in a ref so an inline callback doesn't retrigger the draw effect.
+  const onRenderedRef = useRef(onRendered);
+  useEffect(() => {
+    onRenderedRef.current = onRendered;
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -67,6 +75,7 @@ export function ScreenshotPreview({
         },
         pixelWidth / target.width,
       );
+      onRenderedRef.current?.();
     };
     void draw();
     return () => {

@@ -101,8 +101,8 @@ export function Editor({ projectId }: { projectId: string }) {
 
   const colors = useMemo<DesignColors>(
     () => ({
-      primary: colorDraft.primary ?? project?.primaryColor ?? "#4f46e5",
-      secondary: colorDraft.secondary ?? project?.secondaryColor ?? "#06b6d4",
+      primary: colorDraft.primary ?? project?.primaryColor ?? "#0f766e",
+      secondary: colorDraft.secondary ?? project?.secondaryColor ?? "#2dd4bf",
       text: colorDraft.text ?? project?.textColor ?? "#ffffff",
     }),
     [colorDraft, project?.primaryColor, project?.secondaryColor, project?.textColor],
@@ -317,11 +317,22 @@ export function Editor({ projectId }: { projectId: string }) {
         </Button>
         <Button onClick={onExport} disabled={busy || shots.length === 0}>
           {exportProgress ? <Spinner /> : <DownloadIcon />}
-          {exportProgress ? `Exporting ${exportProgress}` : "Export ZIP"}
+          <span className="tabular-nums">
+            {exportProgress ? (
+              <>
+                <span className="hidden sm:inline">Exporting </span>
+                {exportProgress}
+              </>
+            ) : (
+              <>
+                Export<span className="hidden sm:inline"> ZIP</span>
+              </>
+            )}
+          </span>
         </Button>
       </SiteHeader>
 
-      <main className="mx-auto grid w-full max-w-7xl flex-1 items-start gap-6 px-4 py-6 lg:grid-cols-[340px_1fr]">
+      <main className="mx-auto grid w-full max-w-7xl flex-1 items-start gap-6 px-[max(1rem,env(safe-area-inset-left))] py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:grid-cols-[340px_1fr]">
         <aside className="flex flex-col gap-4 lg:sticky lg:top-20">
           <div className="flex items-center gap-2">
             <Link href="/" className={buttonVariants({ variant: "ghost", size: "icon-sm" })} aria-label="Back">
@@ -375,14 +386,18 @@ export function Editor({ projectId }: { projectId: string }) {
           <div className="flex flex-wrap items-center gap-3">
             <Tabs value={platform} onValueChange={(v) => setPlatform(v as Platform)}>
               <TabsList>
-                <TabsTrigger value="ios">App Store · iPhone</TabsTrigger>
-                <TabsTrigger value="android">Google Play · Android</TabsTrigger>
+                <TabsTrigger value="ios">
+                  <span className="hidden sm:inline">App Store · </span>iPhone
+                </TabsTrigger>
+                <TabsTrigger value="android">
+                  <span className="hidden sm:inline">Google Play · </span>Android
+                </TabsTrigger>
               </TabsList>
             </Tabs>
             <Badge variant="outline">
               Preview {target.width}×{target.height}
             </Badge>
-            <p className="ml-auto text-xs text-muted-foreground">
+            <p className="ml-auto hidden text-xs text-muted-foreground md:block">
               ZIP includes {EXPORT_TARGETS.map((t) => `${t.store} ${t.label}`).join(", ")}
             </p>
           </div>

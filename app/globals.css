@@ -57,7 +57,7 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --primary: oklch(0.511 0.096 186.391);
   --primary-foreground: oklch(0.985 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
@@ -68,7 +68,7 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --ring: oklch(0.704 0.14 182.503);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -92,8 +92,8 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: oklch(0.777 0.152 181.912);
+  --primary-foreground: oklch(0.277 0.046 192.524);
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
@@ -128,5 +128,175 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* ---------- Mobile baseline ---------- */
+html {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+}
+
+button,
+a,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+/* ---------- Landing entrance ----------
+   Plays once per page load. Lead elements travel further than support;
+   decoration only fades. Animations never block clicks. */
+@keyframes landing-rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-distance, 12px));
+  }
+}
+
+@keyframes landing-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.landing-rise {
+  animation: landing-rise 600ms var(--ease-ui) var(--rise-delay, 0ms) both;
+}
+
+.landing-fade {
+  animation: landing-fade 400ms ease var(--rise-delay, 0ms) both;
+}
+
+/* Hero headline: each word lifts out of a soft blur. */
+@keyframes blur-in {
+  from {
+    opacity: 0;
+    filter: blur(8px);
+    transform: translateY(0.25em);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+
+.word-in {
+  animation: blur-in 700ms var(--ease-ui) var(--word-delay, 0ms) both;
+}
+
+/* Showcase fan: shots rise and swing out into a gentle arc. fill-mode is
+   backwards (not both) so the hover lift can transition after it settles. */
+.fan-item {
+  transform: translateY(var(--fan-y, 0)) rotate(var(--fan-r, 0deg));
+  transform-origin: 50% 100%;
+  transition: transform 300ms var(--ease-ui);
+}
+
+@keyframes fan-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(var(--fan-y, 0px) + 56px)) rotate(0deg) scale(0.96);
+  }
+}
+
+.fan-in {
+  animation: fan-in 900ms var(--ease-ui) var(--rise-delay, 0ms) backwards;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .fan-item:hover {
+    transform: translateY(calc(var(--fan-y, 0px) - 10px)) rotate(var(--fan-r, 0deg));
+  }
+}
+
+/* One diagonal gloss across the lead shot after the fan settles. */
+.fan-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.38) 50%, transparent 65%);
+  transform: translateX(-120%);
+  animation: sheen 1100ms var(--ease-ui) 900ms forwards;
+}
+
+@keyframes sheen {
+  to {
+    transform: translateX(120%);
+  }
+}
+
+/* Scroll reveal: fades and lifts once when a section enters the viewport. */
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 700ms var(--ease-ui),
+    transform 700ms var(--ease-ui);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+.reveal[data-shown] {
+  opacity: 1;
+  transform: none;
+}
+
+/* Captions appear one by one once their card is on screen. */
+.caption-in {
+  opacity: 0;
+}
+
+.reveal[data-shown] .caption-in {
+  animation: blur-in 600ms var(--ease-ui) var(--caption-delay, 0ms) both;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Form hint/error swap: a short drop-in so the new message reads as a change. */
+@keyframes message-in {
+  from {
+    opacity: 0;
+    transform: translateY(-3px);
+  }
+}
+
+.message-in {
+  animation: message-in 200ms var(--ease-ui) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .message-in {
+    animation-name: landing-fade;
+  }
+
+  .word-in,
+  .reveal[data-shown] .caption-in,
+  .fan-in {
+    animation-name: landing-fade;
+    animation-duration: 300ms;
+    animation-delay: 0ms;
+  }
+
+  .fan-item,
+  .fan-item:hover {
+    transform: none;
+  }
+
+  .fan-sheen {
+    display: none;
+  }
+
+  .reveal {
+    transform: none;
+  }
+
+  .landing-rise {
+    animation-name: landing-fade;
+    animation-duration: 300ms;
+    animation-delay: 0ms;
   }
 }

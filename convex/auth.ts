@@ -25,5 +25,5 @@ export const {
   usernameComponent: components.authUsername,
   rpId: siteUrl.hostname,
   origin: siteUrl.origin,
-  rpName: "Magicwebs Screenshots",
+  rpName: "Magic Screenshots",
 }).attachUserCallbacks({ createUser: internal.users.createUser });

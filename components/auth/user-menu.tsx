@@ -17,9 +17,9 @@ export function UserMenu() {
         <UserIcon className="size-4" />
         {me?.username ?? "Signed in"}
       </span>
-      <Button variant="ghost" size="sm" onClick={() => void signOut()}>
+      <Button variant="ghost" size="sm" onClick={() => void signOut()} aria-label="Sign out">
         <LogOutIcon />
-        Sign out
+        <span className="hidden sm:inline">Sign out</span>
       </Button>
     </div>
   );

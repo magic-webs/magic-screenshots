@@ -43,7 +43,7 @@ export function ScreenshotCard({
 }: Props) {
   return (
     <div className="flex flex-col gap-3 rounded-xl border bg-card p-3">
-      <div className="overflow-hidden rounded-lg border">
+      <div className="mx-auto w-full max-w-64 overflow-hidden rounded-lg border sm:max-w-none">
         <ScreenshotPreview
           target={target}
           template={template}

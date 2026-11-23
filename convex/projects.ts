@@ -17,8 +17,8 @@ export const create = mutation({
       name: name.slice(0, 80),
       description: args.description.trim().slice(0, 500),
       templateId: "classic",
-      primaryColor: "#4f46e5",
-      secondaryColor: "#06b6d4",
+      primaryColor: "#0f766e",
+      secondaryColor: "#2dd4bf",
       textColor: "#ffffff",
     });
   },
