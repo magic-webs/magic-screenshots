@@ -65,7 +65,7 @@ export function DesignPanel({
                   title={t.description}
                   aria-pressed={active}
                   className={cn(
-                    "group relative flex flex-col gap-1 rounded-lg p-1 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                    "group relative flex flex-col gap-1 rounded-lg p-1 text-left outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [transition:background-color_150ms_ease,box-shadow_150ms_ease,transform_160ms_var(--ease-ui)] active:scale-[0.98]",
                     active ? "bg-primary/10 ring-2 ring-primary" : "hover:bg-muted",
                   )}
                 >
@@ -103,7 +103,7 @@ export function DesignPanel({
                 key={p.primary + p.secondary}
                 type="button"
                 onClick={() => onColors(p)}
-                className="size-8 rounded-full ring-offset-2 ring-offset-background outline-none hover:ring-2 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring"
+                className="size-8 rounded-full ring-offset-2 ring-offset-background outline-none hover:ring-2 hover:ring-ring focus-visible:ring-2 focus-visible:ring-ring [transition:box-shadow_150ms_ease,transform_160ms_var(--ease-ui)] active:scale-[0.95]"
                 style={{ background: `linear-gradient(135deg, ${p.primary}, ${p.secondary})` }}
                 aria-label={`Use ${p.primary} and ${p.secondary}`}
               />
